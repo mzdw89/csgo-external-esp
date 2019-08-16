@@ -127,7 +127,7 @@ int APIENTRY wWinMain( _In_ HINSTANCE instance, _In_opt_ HINSTANCE prev_instance
 			esp::draw( &memory, &renderer );
 			renderer.end_rendering( );
 
-			//std::this_thread::sleep_for( std::chrono::milliseconds( 1 ) );
+			std::this_thread::sleep_for( std::chrono::milliseconds( 1 ) );
 		} while ( m.message != WM_QUIT );
 
 		log( "Exiting..." );
