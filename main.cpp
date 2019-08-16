@@ -1,4 +1,3 @@
-#define _CRT_SECURE_NO_WARNINGS
 #include "memory_manager/memory_manager.h"
 #include "dx_overlay/dx_overlay.h"
 #include "csgo_sdk/csgo_sdk.h"
