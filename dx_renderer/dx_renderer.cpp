@@ -56,6 +56,7 @@ namespace forceinline {
 	}
 
 	void dx_renderer::draw_line( int x0, int y0, int x1, int y1, unsigned long color ) {
+		//Causing shit to clear way too late; not using rn
 		/*D3DTLVERTEX qV[ 2 ] = {
 			{ float( x0 ), float( y0 ), 0.f, 1.f, color },
 			{ float( x1 ), float( y1 ), 0.f, 1.f, color },
