@@ -62,41 +62,42 @@ int APIENTRY wWinMain( _In_ HINSTANCE instance, _In_opt_ HINSTANCE prev_instance
 				std::uintptr_t local_ptr = ent_info[ local_player_idx ].entity_ptr;
 
 				//Is our local player ptr valid?
-				if ( local_ptr ) {
-					//Get our local player
-					sdk::entity_t local( &memory, local_ptr );
+				if ( !local_ptr ) 
+					continue;
+					
+				//Get our local player
+				sdk::entity_t local( &memory, local_ptr );
 
-					//Gather entity information for our ESP
-					for ( std::size_t i = 0; i < ent_info.size( ); i++ ) {
-						std::uintptr_t ent_ptr = ent_info[ i ].entity_ptr;
+				//Gather entity information for our ESP
+				for ( std::size_t i = 0; i < ent_info.size( ); i++ ) {
+					std::uintptr_t ent_ptr = ent_info[ i ].entity_ptr;
 
-						//Entity is invalid, don't draw on ESP
-						if ( !ent_ptr )
-							continue;
+					//Entity is invalid, don't draw on ESP
+					if ( !ent_ptr )
+						continue;
 
-						//Create an entity object so we can get information the easy way
-						sdk::entity_t entity( &memory, ent_ptr );
+					//Create an entity object so we can get information the easy way
+					sdk::entity_t entity( &memory, ent_ptr );
 
-						//Continue if entity is dormant or dead
-						if ( entity.dormant( ) || !entity.is_alive( ) )
-							continue;
+					//Continue if entity is dormant or dead
+					if ( entity.dormant( ) || !entity.is_alive( ) )
+						continue;
 
-						//We don't want to draw ESP on our team
-						if ( entity.team( ) == local.team( ) )
-							continue;
+					//We don't want to draw ESP on our team
+					if ( entity.team( ) == local.team( ) )
+						continue;
 
-						//We have a valid entity, get a reference to it for ease of use
-						esp::esp_entity_t& esp_entity = esp::entities[ i ];
+					//We have a valid entity, get a reference to it for ease of use
+					esp::esp_entity_t& esp_entity = esp::entities[ i ];
 
-						//Get entity information for our ESP
-						esp_entity.health = entity.health( );
-						entity.get_name( esp_entity.name );
-						esp_entity.origin = entity.origin( );
-						esp_entity.top_origin = esp_entity.origin + sdk::vec3_t( 0.f, 0.f, 75.f );
+					//Get entity information for our ESP
+					esp_entity.health = entity.health( );
+					entity.get_name( esp_entity.name );
+					esp_entity.origin = entity.origin( );
+					esp_entity.top_origin = esp_entity.origin + sdk::vec3_t( 0.f, 0.f, 75.f );
 
-						//Our ESP entity is now valid to draw
-						esp_entity.valid = true;
-					}
+					//Our ESP entity is now valid to draw
+					esp_entity.valid = true;
 				}
 			}
 		} );
