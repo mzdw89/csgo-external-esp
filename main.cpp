@@ -1,3 +1,4 @@
+#define _CRT_SECURE_NO_WARNINGS
 #include "memory_manager/memory_manager.h"
 #include "dx_overlay/dx_overlay.h"
 #include "csgo_sdk/csgo_sdk.h"
@@ -25,7 +26,7 @@ int APIENTRY wWinMain( _In_ HINSTANCE instance, _In_opt_ HINSTANCE prev_instance
 	try {
 		//Create overlay and memory objects
 		forceinline::memory_manager memory( "csgo.exe" );
-		forceinline::dx_overlay overlay( L"Valve001", L"Counter-Strike: Global Offensive", true );
+		forceinline::dx_overlay overlay( L"Valve001", L"Counter-Strike: Global Offensive", false );
 
 		//If our constructor didn't throw, these will have to be true
 		assert( memory.is_attached( ) );
@@ -40,6 +41,9 @@ int APIENTRY wWinMain( _In_ HINSTANCE instance, _In_opt_ HINSTANCE prev_instance
 		//Create a thread to read info so we don't slow down our rendering part
 		std::thread read_ent_info( [ & ]( ) -> void {
 			std::vector< sdk::ent_info_t > ent_info( 64 );
+			
+			std::uintptr_t engine_dll = memory[ "engine.dll" ];
+			std::uintptr_t client_dll = memory[ "client_panorama.dll" ];
 
 			while ( 1 ) {
 				std::this_thread::sleep_for( std::chrono::milliseconds( 1 ) );
@@ -52,52 +56,51 @@ int APIENTRY wWinMain( _In_ HINSTANCE instance, _In_opt_ HINSTANCE prev_instance
 					esp_ent.valid = false;
 
 				//Get clientstate for the entitylist
-				std::uintptr_t client_state = memory.read< std::uintptr_t >( memory[ "engine.dll" ] + 0x590D8C ); //m_dwClientState
+				std::uintptr_t client_state = memory.read< std::uintptr_t >( engine_dll + 0x590D8C ); //m_dwClientState
 
 				//Read the whole entity list at once
-				memory.read_ex< sdk::ent_info_t >( ent_info.data( ), memory[ "client_panorama.dll" ] + 0x4D06CB4, ent_info.size( ) ); //m_dwEntityList
+				memory.read_ex< sdk::ent_info_t >( ent_info.data( ), client_dll + 0x4D06CB4, ent_info.size( ) ); //m_dwEntityList
 
 				//Get our local player ptr
 				int local_player_idx = memory.read< int >( client_state + 0x180 ); //m_dwClientState_GetLocalPlayer
 				std::uintptr_t local_ptr = ent_info[ local_player_idx ].entity_ptr;
 
 				//Is our local player ptr valid?
-				if ( !local_ptr ) 
-					continue;
-					
-				//Get our local player
-				sdk::entity_t local( &memory, local_ptr );
+				if ( local_ptr ) {
+					//Get our local player
+					sdk::entity_t local( &memory, local_ptr );
 
-				//Gather entity information for our ESP
-				for ( std::size_t i = 0; i < ent_info.size( ); i++ ) {
-					std::uintptr_t ent_ptr = ent_info[ i ].entity_ptr;
+					//Gather entity information for our ESP
+					for ( std::size_t i = 0; i < ent_info.size( ); i++ ) {
+						std::uintptr_t ent_ptr = ent_info[ i ].entity_ptr;
 
-					//Entity is invalid, don't draw on ESP
-					if ( !ent_ptr )
-						continue;
+						//Entity is invalid, don't draw on ESP
+						if ( !ent_ptr )
+							continue;
 
-					//Create an entity object so we can get information the easy way
-					sdk::entity_t entity( &memory, ent_ptr );
+						//Create an entity object so we can get information the easy way
+						sdk::entity_t entity( &memory, ent_ptr );
 
-					//Continue if entity is dormant or dead
-					if ( entity.dormant( ) || !entity.is_alive( ) )
-						continue;
+						//Continue if entity is dormant or dead
+						if ( entity.dormant( ) || !entity.is_alive( ) )
+							continue;
 
-					//We don't want to draw ESP on our team
-					if ( entity.team( ) == local.team( ) )
-						continue;
+						//We don't want to draw ESP on our team
+						if ( entity.team( ) == local.team( ) )
+							continue;
 
-					//We have a valid entity, get a reference to it for ease of use
-					esp::esp_entity_t& esp_entity = esp::entities[ i ];
+						//We have a valid entity, get a reference to it for ease of use
+						esp::esp_entity_t& esp_entity = esp::entities[ i ];
 
-					//Get entity information for our ESP
-					esp_entity.health = entity.health( );
-					entity.get_name( esp_entity.name );
-					esp_entity.origin = entity.origin( );
-					esp_entity.top_origin = esp_entity.origin + sdk::vec3_t( 0.f, 0.f, 75.f );
+						//Get entity information for our ESP
+						esp_entity.health = entity.health( );
+						entity.get_name( esp_entity.name );
+						esp_entity.origin = entity.origin( );
+						esp_entity.top_origin = esp_entity.origin + sdk::vec3_t( 0.f, 0.f, 75.f );
 
-					//Our ESP entity is now valid to draw
-					esp_entity.valid = true;
+						//Our ESP entity is now valid to draw
+						esp_entity.valid = true;
+					}
 				}
 			}
 		} );

@@ -67,20 +67,45 @@ namespace forceinline {
 		//Allocate sizeof module bytes
 		std::vector< std::uint8_t > module_bytes( module_size );
 
-		//Modify the page(s) so we can read them, also add execute and write rights so we don't crash our process
-		DWORD old_protect;
-		VirtualProtectEx( m_proc_handle, reinterpret_cast< void* >( module_begin ), module_size, PAGE_EXECUTE_READWRITE, &old_protect );
+		std::size_t page_size = 4096;
+		std::size_t num_pages = module_size / page_size;
+		std::size_t page_remainder = module_size % page_size;
 
-		//Read the whole module at once to save time and processing power
-		SIZE_T bytes_read;
-		if ( !ReadProcessMemory( m_proc_handle, reinterpret_cast< LPCVOID >( module_begin ), module_bytes.data( ), module_size, &bytes_read ) )
+		//Function to read a page
+		std::uintptr_t total_bytes_read = 0x0;
+		auto read_page = [ & ]( std::uintptr_t start, std::size_t size ) -> bool {
+			//Modify the page so we can read it, also add execute and write rights so we don't crash our process
+			DWORD old_protect;
+			VirtualProtectEx( m_proc_handle, reinterpret_cast< void* >( start ), size, PAGE_EXECUTE_READWRITE, &old_protect );
+
+			//Read a whole page (or the remainder of it)
+			SIZE_T bytes_read;
+			if ( !ReadProcessMemory( m_proc_handle, reinterpret_cast< LPCVOID >( start ), module_bytes.data( ) + total_bytes_read, size, &bytes_read ) )
+				return 0x0;
+
+			//Add the read bytes
+			total_bytes_read += bytes_read;
+
+			//Restore the old protection flags
+			VirtualProtectEx( m_proc_handle, reinterpret_cast< void* >( start ), size, old_protect, &old_protect );
+
+			//Did we read as much as we requested to?
+			return bytes_read == size;
+		};
+
+		//Read each page seperately
+		for ( std::size_t i = 0; i < num_pages; i++ ) {
+			//Return 0 if we failed to read
+			if ( !read_page( module_begin + i * page_size, page_size ) )
+				return 0x0;
+		}
+
+		//Read remainder of page
+		if ( !read_page( module_begin + --num_pages * page_size, page_remainder ) )
 			return 0x0;
 
-		//Restore the old protection flags
-		VirtualProtectEx( m_proc_handle, reinterpret_cast< void* >( module_begin ), module_size, old_protect, &old_protect );
-
-		//Return 0 if we didn't enough bytes
-		if ( bytes_read != module_size )
+		//We didn't read the whole module
+		if ( total_bytes_read != module_size )
 			return 0x0;
 
 		auto get_byte_vector_and_mask = [ ]( const std::string& pattern, std::vector< std::uint8_t >& byte_vec, std::string& mask ) {

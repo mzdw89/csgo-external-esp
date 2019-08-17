@@ -10,8 +10,17 @@ namespace esp {
 		//Create our vectors for the 2D screen position
 		sdk::vec3_t screen_bottom, screen_top;
 
+		//Get the module base for client_panorama.dll
+		static std::uintptr_t client_dll = memory->get_module_base( "client_panorama.dll" );
+
 		//Grab the view matrix
-		sdk::view_matrix_t view_matrix = memory->read< sdk::view_matrix_t >( memory->get_module_base( "client_panorama.dll" ) + 0x4CF86E4 ); //view_matrix
+		sdk::view_matrix_t view_matrix = memory->read< sdk::view_matrix_t >( client_dll + 0x4CF86E4 ); //view_matrix
+
+		//Doesn't work; flickers a LOT for some reason.
+		//static std::uintptr_t crender_bytes = memory->find_pattern( "engine.dll", "B9 ? ? ? ? A1 ? ? ? ? FF 60 38" ) + 1;
+		//static std::uintptr_t crender_offset = memory->read< std::uintptr_t >( crender_bytes );
+
+		//sdk::view_matrix_t view_matrix = memory->read< sdk::view_matrix_t >( crender_offset + 39 * 4 );
 
 		//Loop our vector containing the entities
 		for ( auto& ent : entities ) {
