@@ -4,6 +4,16 @@
 #include "../memory_manager/memory_manager.h"
 
 namespace sdk {
+	class modules_t {
+	public:
+		modules_t( ) { }
+		modules_t( forceinline::memory_manager* memory );
+		~modules_t( ) { }
+
+		std::uintptr_t client_dll = 0x0;
+		std::uintptr_t engine_dll = 0x0;
+	};
+
 	struct vec3_t {
 		float x = 0, y = 0, z = 0;
 
@@ -43,7 +53,7 @@ namespace sdk {
 
 	class entity_t {
 	public:
-		entity_t( forceinline::memory_manager* memory, std::uintptr_t ptr );
+		entity_t( forceinline::memory_manager* memory, sdk::modules_t* modules, std::uintptr_t ptr );
 
 		bool dormant( );
 
@@ -60,6 +70,7 @@ namespace sdk {
 
 	private:
 		std::uintptr_t m_ptr = 0x0;
+		sdk::modules_t* m_modules = nullptr;
 		forceinline::memory_manager* m_memory = nullptr;
 	};
 

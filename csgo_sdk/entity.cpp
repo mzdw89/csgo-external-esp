@@ -4,9 +4,10 @@
 #define ent_netvar( nv_type, nv_name, nv_offset ) nv_type entity_t::##nv_name( ) { return m_memory->read< nv_type >( m_ptr + nv_offset );  }
 
 namespace sdk {
-	entity_t::entity_t( forceinline::memory_manager* const memory, std::uintptr_t ent_ptr ) {
-		m_ptr = ent_ptr;
+	entity_t::entity_t( forceinline::memory_manager* memory, sdk::modules_t* modules, std::uintptr_t ent_ptr ) {
 		m_memory = memory;
+		m_modules = modules;
+		m_ptr = ent_ptr;
 	}
 
 	ent_netvar( bool, dormant, 0xED );
@@ -24,7 +25,7 @@ namespace sdk {
 			char name[ 32 ];
 		};
 
-		std::uintptr_t client_state = m_memory->read< std::uintptr_t >( m_memory->get_module_base( "engine.dll" ) + 0x590D8C ); //m_dwClientState
+		std::uintptr_t client_state = m_memory->read< std::uintptr_t >( m_modules->engine_dll + 0x590D8C ); //m_dwClientState
 		std::uintptr_t user_info_table = m_memory->read< std::uintptr_t >( client_state + 0x52B8 ); //m_dwClientState_PlayerInfo
 		std::uintptr_t x = m_memory->read< std::uintptr_t >( m_memory->read< std::uintptr_t >( user_info_table + 0x40 ) + 0xC );
 		player_info_t p = m_memory->read< player_info_t >( m_memory->read< uintptr_t >( x + 0x28 + 0x34 * ( index( ) - 1 ) ) );

@@ -2,6 +2,11 @@
 #include <cmath>
 
 namespace sdk {
+	modules_t::modules_t( forceinline::memory_manager* memory ) {
+		client_dll = memory->get_module_base( "client_panorama.dll" );
+		engine_dll = memory->get_module_base( "engine.dll" );
+	}
+
 	vec3_t::vec3_t( ) {
 		x = y = z = 0;
 	}
